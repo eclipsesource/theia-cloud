@@ -12,8 +12,8 @@ data:
       keycloakAuthUrl: "{{ .Values.keycloak.authUrl }}",
       keycloakRealm: "{{ .Values.keycloak.realm }}",
       keycloakClientId: "{{ .Values.keycloak.clientId }}",
-      workspaceServiceUrl: "https://{{ .Values.hosts.workspace }}/workspaces",
-      workspaceTemplate: "{{ .Values.landingPage.template }}",
+      serviceUrl: "https://{{ .Values.hosts.service }}/service",
+      appDefinition: "{{ .Values.landingPage.appDefinition }}",
     };
 binaryData:
   {{ range $path, $bytes := .Files.Glob (printf "logos/%s" .Values.app.logo)}}

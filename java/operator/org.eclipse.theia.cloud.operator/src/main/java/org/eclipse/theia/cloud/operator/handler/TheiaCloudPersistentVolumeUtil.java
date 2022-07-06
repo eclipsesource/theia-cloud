@@ -19,34 +19,61 @@ package org.eclipse.theia.cloud.operator.handler;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.eclipse.theia.cloud.common.k8s.resource.Workspace;
+import org.eclipse.theia.cloud.common.k8s.resource.Session;
+import org.eclipse.theia.cloud.operator.resource.AppDefinitionSpec;
+
+import io.fabric8.kubernetes.api.model.Container;
+import io.fabric8.kubernetes.api.model.PodSpec;
 
 public final class TheiaCloudPersistentVolumeUtil {
 
     public static final String PLACEHOLDER_PERSISTENTVOLUMENAME = "placeholder-pv";
 
+    private static final String MOUNT_PATH = "/home/project/persisted";
+
     private TheiaCloudPersistentVolumeUtil() {
 
     }
 
-    public static String getPersistentVolumeName(Workspace workspace) {
-	String user = workspace.getSpec().getUser();
+    public static String getMountPath(AppDefinitionSpec appDefinition) {
+	String mountPath = appDefinition.getMountPath();
+	if (mountPath == null || mountPath.isEmpty()) {
+	    return MOUNT_PATH;
+	}
+	return mountPath;
+    }
+
+    public static String getPersistentVolumeName(Session session) {
+	String user = session.getSpec().getUser();
 	String pvName = user.replace("@", "at").replace(".", "-");
 	return pvName;
     }
 
-    public static Map<String, String> getPersistentVolumeReplacements(String namespace, Workspace workspace) {
+    public static Map<String, String> getPersistentVolumeReplacements(String namespace, Session session) {
 	Map<String, String> replacements = new LinkedHashMap<String, String>();
-	replacements.put(PLACEHOLDER_PERSISTENTVOLUMENAME, getPersistentVolumeName(workspace));
+	replacements.put(PLACEHOLDER_PERSISTENTVOLUMENAME, getPersistentVolumeName(session));
 	replacements.put(TheiaCloudHandlerUtil.PLACEHOLDER_NAMESPACE, namespace);
 	return replacements;
     }
 
-    public static Map<String, String> getPersistentVolumeClaimReplacements(String namespace, Workspace workspace) {
+    public static Map<String, String> getPersistentVolumeClaimReplacements(String namespace, Session session) {
 	Map<String, String> replacements = new LinkedHashMap<String, String>();
-	replacements.put(PLACEHOLDER_PERSISTENTVOLUMENAME, getPersistentVolumeName(workspace));
+	replacements.put(PLACEHOLDER_PERSISTENTVOLUMENAME, getPersistentVolumeName(session));
 	replacements.put(TheiaCloudHandlerUtil.PLACEHOLDER_NAMESPACE, namespace);
 	return replacements;
+    }
+
+    public static Container getTheiaContainer(PodSpec podSpec, AppDefinitionSpec appDefinition) {
+	String image = appDefinition.getImage();
+	for (Container container : podSpec.getContainers()) {
+	    if (container.getImage().startsWith(image)) {
+		return container;
+	    }
+	}
+	if (podSpec.getContainers().size() == 1) {
+	    return podSpec.getContainers().get(0);
+	}
+	return podSpec.getContainers().get(1);
     }
 
 }

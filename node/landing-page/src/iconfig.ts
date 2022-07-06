@@ -5,6 +5,6 @@ export interface TheiaCloudConfig {
   keycloakAuthUrl?: string;
   keycloakRealm?: string;
   keycloakClientId?: string;
-  workspaceServiceUrl: string;
-  workspaceTemplate: string;
+  serviceUrl: string;
+  appDefinition: string;
 }

@@ -26,14 +26,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.theia.cloud.common.k8s.resource.Workspace;
-import org.eclipse.theia.cloud.common.k8s.resource.WorkspaceSpecResourceList;
+import org.eclipse.theia.cloud.common.k8s.resource.Session;
+import org.eclipse.theia.cloud.common.k8s.resource.SessionSpecResourceList;
 import org.eclipse.theia.cloud.operator.di.AbstractTheiaCloudOperatorModule;
-import org.eclipse.theia.cloud.operator.handler.TemplateAddedHandler;
-import org.eclipse.theia.cloud.operator.handler.WorkspaceAddedHandler;
-import org.eclipse.theia.cloud.operator.handler.WorkspaceRemovedHandler;
-import org.eclipse.theia.cloud.operator.resource.TemplateSpecResource;
-import org.eclipse.theia.cloud.operator.resource.TemplateSpecResourceList;
+import org.eclipse.theia.cloud.operator.handler.AppDefinitionAddedHandler;
+import org.eclipse.theia.cloud.operator.handler.SessionAddedHandler;
+import org.eclipse.theia.cloud.operator.handler.SessionRemovedHandler;
+import org.eclipse.theia.cloud.operator.resource.AppDefinitionSpecResource;
+import org.eclipse.theia.cloud.operator.resource.AppDefinitionSpecResourceList;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -49,178 +49,186 @@ public class TheiaCloudImpl implements TheiaCloud {
 
     private static final Logger LOGGER = LogManager.getLogger(TheiaCloudImpl.class);
 
-    private static final String COR_ID_TEMPLATEPREFIX = "template-watch-";
-    private static final String COR_ID_WORKSPACEPREFIX = "workspace-watch-";
+    private static final String COR_ID_APPDEFINITIONPREFIX = "appdefinition-watch-";
+    private static final String COR_ID_SESSIONPREFIX = "session-watch-";
 
-    private final Map<String, TemplateSpecResource> templateCache = new ConcurrentHashMap<>();
-    private final Map<String, Workspace> workspaceCache = new ConcurrentHashMap<>();
+    private final Map<String, AppDefinitionSpecResource> appDefinitionCache = new ConcurrentHashMap<>();
+    private final Map<String, Session> sessionCache = new ConcurrentHashMap<>();
 
     private final String namespace;
     private final Injector injector;
+    private final TheiaCloudArguments arguments;
     private final DefaultKubernetesClient client;
-    private final NonNamespaceOperation<TemplateSpecResource, TemplateSpecResourceList, Resource<TemplateSpecResource>> templateResourceClient;
-    private final NonNamespaceOperation<Workspace, WorkspaceSpecResourceList, Resource<Workspace>> workspaceResourceClient;
+    private final NonNamespaceOperation<AppDefinitionSpecResource, AppDefinitionSpecResourceList, Resource<AppDefinitionSpecResource>> appDefinitionResourceClient;
+    private final NonNamespaceOperation<Session, SessionSpecResourceList, Resource<Session>> sessionResourceClient;
 
-    private TemplateAddedHandler templateAddedHandler;
-    private WorkspaceAddedHandler workspaceAddedHandler;
-    private WorkspaceRemovedHandler workspaceRemovedHandler;
+    private AppDefinitionAddedHandler appDefinitionAddedHandler;
+    private SessionAddedHandler sessionAddedHandler;
+    private SessionRemovedHandler sessionRemovedHandler;
 
-    public TheiaCloudImpl(String namespace, AbstractTheiaCloudOperatorModule module, DefaultKubernetesClient client,
-	    NonNamespaceOperation<TemplateSpecResource, TemplateSpecResourceList, Resource<TemplateSpecResource>> templateResourceClient,
-	    NonNamespaceOperation<Workspace, WorkspaceSpecResourceList, Resource<Workspace>> workspaceResourceClient) {
+    public TheiaCloudImpl(String namespace, AbstractTheiaCloudOperatorModule module, TheiaCloudArguments arguments,
+	    DefaultKubernetesClient client,
+	    NonNamespaceOperation<AppDefinitionSpecResource, AppDefinitionSpecResourceList, Resource<AppDefinitionSpecResource>> appDefinitionResourceClient,
+	    NonNamespaceOperation<Session, SessionSpecResourceList, Resource<Session>> sessionResourceClient) {
 	this.namespace = namespace;
 	this.injector = Guice.createInjector(module);
+	this.arguments = arguments;
 	this.client = client;
-	this.templateResourceClient = templateResourceClient;
-	this.workspaceResourceClient = workspaceResourceClient;
+	this.appDefinitionResourceClient = appDefinitionResourceClient;
+	this.sessionResourceClient = sessionResourceClient;
 
-	this.templateAddedHandler = injector.getInstance(TemplateAddedHandler.class);
-	this.workspaceAddedHandler = injector.getInstance(WorkspaceAddedHandler.class);
-	this.workspaceRemovedHandler = injector.getInstance(WorkspaceRemovedHandler.class);
+	this.appDefinitionAddedHandler = injector.getInstance(AppDefinitionAddedHandler.class);
+	this.sessionAddedHandler = injector.getInstance(SessionAddedHandler.class);
+	this.sessionRemovedHandler = injector.getInstance(SessionRemovedHandler.class);
     }
 
     @Override
     public void start() {
-	initTemplatesAndWatchForChanges();
-	initWorkspacesAndWatchForChanges();
+	initAppDefinitionsAndWatchForChanges();
+	initSessionsAndWatchForChanges();
 
-	EXECUTOR.scheduleWithFixedDelay(new KillAfterRunnable(templateResourceClient, workspaceResourceClient), 1, 1,
-		TimeUnit.MINUTES);
+	EXECUTOR.scheduleWithFixedDelay(
+		new KillAfterRunnable(appDefinitionResourceClient, sessionResourceClient, arguments.getKillAfter()), 1,
+		1, TimeUnit.MINUTES);
     }
 
-    private void handleTemplateEvent(Watcher.Action action, String uid, String correlationId) {
-	TemplateSpecResource template = templateCache.get(uid);
+    private void handleAppDefnitionEvent(Watcher.Action action, String uid, String correlationId) {
+	AppDefinitionSpecResource appDefinition = appDefinitionCache.get(uid);
 	switch (action) {
 	case ADDED:
-	    templateAdded(template, correlationId);
+	    appDefinitionAdded(appDefinition, correlationId);
 	    break;
 	case DELETED:
-	    templateDeleted(template, correlationId);
+	    appDefinitionDeleted(appDefinition, correlationId);
 	    break;
 	case MODIFIED:
-	    templateModified(template, correlationId);
+	    appDefinitionModified(appDefinition, correlationId);
 	    break;
 	case ERROR:
-	    templateErrored(template, correlationId);
+	    appDefinitionErrored(appDefinition, correlationId);
 	    break;
 	case BOOKMARK:
-	    templateBookmarked(template, correlationId);
+	    appDefinitionBookmarked(appDefinition, correlationId);
 	    break;
 	}
     }
 
-    private void templateAdded(TemplateSpecResource template, String correlationId) {
-	LOGGER.trace(formatLogMessage(COR_ID_TEMPLATEPREFIX, correlationId,
-		"Delegating templateAdded to " + templateAddedHandler.getClass().getName()));
-	templateAddedHandler.handle(client, template, namespace, correlationId);
+    private void appDefinitionAdded(AppDefinitionSpecResource appDefinition, String correlationId) {
+	LOGGER.trace(formatLogMessage(COR_ID_APPDEFINITIONPREFIX, correlationId,
+		"Delegating appDefinitionAdded to " + appDefinitionAddedHandler.getClass().getName()));
+	appDefinitionAddedHandler.handle(client, appDefinition, namespace, correlationId);
     }
 
-    private void templateDeleted(TemplateSpecResource template, String correlationId) {
+    private void appDefinitionDeleted(AppDefinitionSpecResource appDefinition, String correlationId) {
 	// TODO
-	LOGGER.warn(formatLogMessage(COR_ID_TEMPLATEPREFIX, correlationId, "templateDeleted not implemented"));
+	LOGGER.warn(
+		formatLogMessage(COR_ID_APPDEFINITIONPREFIX, correlationId, "appDefinitionDeleted not implemented"));
     }
 
-    private void templateModified(TemplateSpecResource template, String correlationId) {
+    private void appDefinitionModified(AppDefinitionSpecResource appDefinition, String correlationId) {
 	// TODO
-	LOGGER.warn(formatLogMessage(COR_ID_TEMPLATEPREFIX, correlationId, "templateModified not implemented"));
+	LOGGER.warn(
+		formatLogMessage(COR_ID_APPDEFINITIONPREFIX, correlationId, "appDefinitionModified not implemented"));
     }
 
-    private void templateErrored(TemplateSpecResource template, String correlationId) {
+    private void appDefinitionErrored(AppDefinitionSpecResource appDefinition, String correlationId) {
 	// TODO
-	LOGGER.warn(formatLogMessage(COR_ID_TEMPLATEPREFIX, correlationId, "templateErrored not implemented"));
+	LOGGER.warn(
+		formatLogMessage(COR_ID_APPDEFINITIONPREFIX, correlationId, "appDefinitionErrored not implemented"));
     }
 
-    private void templateBookmarked(TemplateSpecResource template, String correlationId) {
+    private void appDefinitionBookmarked(AppDefinitionSpecResource appDefinition, String correlationId) {
 	// TODO
-	LOGGER.warn(formatLogMessage(COR_ID_TEMPLATEPREFIX, correlationId, "templateBookmarked not implemented"));
+	LOGGER.warn(
+		formatLogMessage(COR_ID_APPDEFINITIONPREFIX, correlationId, "appDefinitionBookmarked not implemented"));
     }
 
-    private void handleWorkspaceEvent(Watcher.Action action, String uid, String correlationId) {
-	Workspace workspace = workspaceCache.get(uid);
+    private void handleSessionEvent(Watcher.Action action, String uid, String correlationId) {
+	Session session = sessionCache.get(uid);
 	switch (action) {
 	case ADDED:
-	    workspaceAdded(workspace, correlationId);
+	    sessionAdded(session, correlationId);
 	    break;
 	case DELETED:
-	    workspaceDeleted(workspace, correlationId);
+	    sessionDeleted(session, correlationId);
 	    break;
 	case MODIFIED:
-	    workspaceModified(workspace, correlationId);
+	    sessionModified(session, correlationId);
 	    break;
 	case ERROR:
-	    workspaceErrored(workspace, correlationId);
+	    sessionErrored(session, correlationId);
 	    break;
 	case BOOKMARK:
-	    workspaceBookmarked(workspace, correlationId);
+	    sessionBookmarked(session, correlationId);
 	    break;
 	}
     }
 
-    private void workspaceAdded(Workspace workspace, String correlationId) {
-	LOGGER.trace(formatLogMessage(COR_ID_WORKSPACEPREFIX, correlationId,
-		"Delegating workspaceAdded to " + workspaceAddedHandler.getClass().getName()));
-	workspaceAddedHandler.handle(client, workspace, namespace, correlationId);
+    private void sessionAdded(Session session, String correlationId) {
+	LOGGER.trace(formatLogMessage(COR_ID_SESSIONPREFIX, correlationId,
+		"Delegating sessionAdded to " + sessionAddedHandler.getClass().getName()));
+	sessionAddedHandler.handle(client, session, namespace, correlationId);
     }
 
-    private void workspaceDeleted(Workspace workspace, String correlationId) {
-	LOGGER.trace(formatLogMessage(COR_ID_WORKSPACEPREFIX, correlationId,
-		"Delegating workspaceDeleted to " + workspaceRemovedHandler.getClass().getName()));
-	workspaceRemovedHandler.handle(client, workspace, namespace, correlationId);
+    private void sessionDeleted(Session session, String correlationId) {
+	LOGGER.trace(formatLogMessage(COR_ID_SESSIONPREFIX, correlationId,
+		"Delegating sessionDeleted to " + sessionRemovedHandler.getClass().getName()));
+	sessionRemovedHandler.handle(client, session, namespace, correlationId);
     }
 
-    private void workspaceModified(Workspace workspace, String correlationId) {
+    private void sessionModified(Session session, String correlationId) {
 	// TODO
-	LOGGER.warn(formatLogMessage(COR_ID_WORKSPACEPREFIX, correlationId, "workspaceModified not implemented"));
+	LOGGER.warn(formatLogMessage(COR_ID_SESSIONPREFIX, correlationId, "sessionModified not implemented"));
     }
 
-    private void workspaceErrored(Workspace workspace, String correlationId) {
+    private void sessionErrored(Session session, String correlationId) {
 	// TODO
-	LOGGER.warn(formatLogMessage(COR_ID_WORKSPACEPREFIX, correlationId, "workspaceErrored not implemented"));
+	LOGGER.warn(formatLogMessage(COR_ID_SESSIONPREFIX, correlationId, "sessionErrored not implemented"));
     }
 
-    private void workspaceBookmarked(Workspace workspace, String correlationId) {
+    private void sessionBookmarked(Session session, String correlationId) {
 	// TODO
-	LOGGER.warn(formatLogMessage(COR_ID_WORKSPACEPREFIX, correlationId, "workspaceBookmarked not implemented"));
+	LOGGER.warn(formatLogMessage(COR_ID_SESSIONPREFIX, correlationId, "sessionBookmarked not implemented"));
     }
 
-    private void initTemplatesAndWatchForChanges() {
+    private void initAppDefinitionsAndWatchForChanges() {
 	try {
-	    /* init existing templates */
-	    templateResourceClient.list().getItems().forEach(this::initTemplate);
+	    /* init existing app definitions */
+	    appDefinitionResourceClient.list().getItems().forEach(this::initAppDefinition);
 
 	    /* watch for changes */
-	    templateResourceClient.watch(new SpecWatch<TemplateSpecResource>(templateCache, this::handleTemplateEvent,
-		    "Template", COR_ID_TEMPLATEPREFIX));
+	    appDefinitionResourceClient.watch(new SpecWatch<AppDefinitionSpecResource>(appDefinitionCache,
+		    this::handleAppDefnitionEvent, "App Definition", COR_ID_APPDEFINITIONPREFIX));
 	} catch (Exception e) {
-	    LOGGER.error(formatLogMessage(Main.COR_ID_INIT, "Error while initializing templates watch"), e);
+	    LOGGER.error(formatLogMessage(Main.COR_ID_INIT, "Error while initializing app definitions watch"), e);
 	    System.exit(-1);
 	}
     }
 
-    private void initWorkspacesAndWatchForChanges() {
+    private void initSessionsAndWatchForChanges() {
 	try {
-	    /* init existing workspaces */
-	    workspaceResourceClient.list().getItems().forEach(this::initWorkspace);
+	    /* init existing sessions */
+	    sessionResourceClient.list().getItems().forEach(this::initSession);
 
 	    /* watch for changes */
-	    workspaceResourceClient.watch(new SpecWatch<Workspace>(workspaceCache, this::handleWorkspaceEvent,
-		    "Workspace", COR_ID_WORKSPACEPREFIX));
+	    sessionResourceClient.watch(
+		    new SpecWatch<Session>(sessionCache, this::handleSessionEvent, "Session", COR_ID_SESSIONPREFIX));
 	} catch (Exception e) {
-	    LOGGER.error(formatLogMessage(Main.COR_ID_INIT, "Error while initializing workspace watch"), e);
+	    LOGGER.error(formatLogMessage(Main.COR_ID_INIT, "Error while initializing session watch"), e);
 	    System.exit(-1);
 	}
     }
 
-    private void initTemplate(TemplateSpecResource resource) {
-	templateCache.put(resource.getMetadata().getUid(), resource);
+    private void initAppDefinition(AppDefinitionSpecResource resource) {
+	appDefinitionCache.put(resource.getMetadata().getUid(), resource);
 	String uid = resource.getMetadata().getUid();
-	handleTemplateEvent(Watcher.Action.ADDED, uid, Main.COR_ID_INIT);
+	handleAppDefnitionEvent(Watcher.Action.ADDED, uid, Main.COR_ID_INIT);
     }
 
-    private void initWorkspace(Workspace resource) {
-	workspaceCache.put(resource.getMetadata().getUid(), resource);
+    private void initSession(Session resource) {
+	sessionCache.put(resource.getMetadata().getUid(), resource);
 	String uid = resource.getMetadata().getUid();
-	handleWorkspaceEvent(Watcher.Action.ADDED, uid, Main.COR_ID_INIT);
+	handleSessionEvent(Watcher.Action.ADDED, uid, Main.COR_ID_INIT);
     }
 
 }

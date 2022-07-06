@@ -8,15 +8,17 @@ issuer:
 
 image:
   name: theiacloud/theia-cloud-demo
+  pullSecret: ""
 
 hosts:
-  workspace: workspace.192.168.39.3.nip.io
+  service: service.192.168.39.3.nip.io
   landing: theia.cloud.192.168.39.3.nip.io
   instance: ws.192.168.39.3.nip.io
 
 landingPage:
   image: theiacloud/theia-cloud-landing-page
-  template: "theia-cloud-demo"
+  # imagePullSecret: pullsecret
+  appDefinition: "theia-cloud-demo"
 
 keycloak:
   enable: true
@@ -28,13 +30,16 @@ keycloak:
 
 operator:
   image: theiacloud/theia-cloud-operator
+  # imagePullSecret: pullsecret
   eagerStart: false
   ephemeralStorage: false
   cloudProvider: "K8S"
   bandwidthLimiter: "K8SANNOTATION"
+  killAfter: "FIXEDTIME"
 
-workspace:
-  image: theiacloud/theia-cloud-workspace
+service:
+  image: theiacloud/theia-cloud-service
+  # imagePullSecret: pullsecret
 
 ingress:
   instanceName: "theia-cloud-demo-ws-ingress"

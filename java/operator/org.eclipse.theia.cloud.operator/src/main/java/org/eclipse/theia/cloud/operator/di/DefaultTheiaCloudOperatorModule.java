@@ -18,15 +18,15 @@ package org.eclipse.theia.cloud.operator.di;
 
 import org.eclipse.theia.cloud.operator.TheiaCloudArguments;
 import org.eclipse.theia.cloud.operator.handler.PersistentVolumeHandler;
-import org.eclipse.theia.cloud.operator.handler.TemplateAddedHandler;
-import org.eclipse.theia.cloud.operator.handler.WorkspaceAddedHandler;
-import org.eclipse.theia.cloud.operator.handler.WorkspaceRemovedHandler;
-import org.eclipse.theia.cloud.operator.handler.impl.EagerStartTemplateAddedHandler;
-import org.eclipse.theia.cloud.operator.handler.impl.EagerStartWorkspaceAddedHandler;
+import org.eclipse.theia.cloud.operator.handler.AppDefinitionAddedHandler;
+import org.eclipse.theia.cloud.operator.handler.SessionAddedHandler;
+import org.eclipse.theia.cloud.operator.handler.SessionRemovedHandler;
+import org.eclipse.theia.cloud.operator.handler.impl.EagerStartAppDefinitionAddedHandler;
+import org.eclipse.theia.cloud.operator.handler.impl.EagerStartSessionAddedHandler;
 import org.eclipse.theia.cloud.operator.handler.impl.GKEPersistentVolumeHandlerImpl;
-import org.eclipse.theia.cloud.operator.handler.impl.LazyStartTemplateAddedHandler;
-import org.eclipse.theia.cloud.operator.handler.impl.LazyStartWorkspaceAddedHandler;
-import org.eclipse.theia.cloud.operator.handler.impl.LazyStartWorkspaceRemovedHandler;
+import org.eclipse.theia.cloud.operator.handler.impl.LazyStartAppDefinitionAddedHandler;
+import org.eclipse.theia.cloud.operator.handler.impl.LazyStartSessionAddedHandler;
+import org.eclipse.theia.cloud.operator.handler.impl.LazyStartSessionRemovedHandler;
 
 public class DefaultTheiaCloudOperatorModule extends AbstractTheiaCloudOperatorModule {
 
@@ -60,29 +60,29 @@ public class DefaultTheiaCloudOperatorModule extends AbstractTheiaCloudOperatorM
     }
 
     @Override
-    protected Class<? extends TemplateAddedHandler> bindTemplateAddedHandler() {
+    protected Class<? extends AppDefinitionAddedHandler> bindAppDefinitionAddedHandler() {
 	if (arguments.isEagerStart()) {
-	    return EagerStartTemplateAddedHandler.class;
+	    return EagerStartAppDefinitionAddedHandler.class;
 	} else {
-	    return LazyStartTemplateAddedHandler.class;
+	    return LazyStartAppDefinitionAddedHandler.class;
 	}
     }
 
     @Override
-    protected Class<? extends WorkspaceAddedHandler> bindWorkspaceAddedHandler() {
+    protected Class<? extends SessionAddedHandler> bindSessionAddedHandler() {
 	if (arguments.isEagerStart()) {
-	    return EagerStartWorkspaceAddedHandler.class;
+	    return EagerStartSessionAddedHandler.class;
 	} else {
-	    return LazyStartWorkspaceAddedHandler.class;
+	    return LazyStartSessionAddedHandler.class;
 	}
     }
 
     @Override
-    protected Class<? extends WorkspaceRemovedHandler> bindWorkspaceRemovedHandler() {
+    protected Class<? extends SessionRemovedHandler> bindSessionRemovedHandler() {
 	if (arguments.isEagerStart()) {
 	    throw new UnsupportedOperationException("Not implemented yet");
 	} else {
-	    return LazyStartWorkspaceRemovedHandler.class;
+	    return LazyStartSessionRemovedHandler.class;
 	}
     }
 

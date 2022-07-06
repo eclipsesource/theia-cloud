@@ -8,15 +8,16 @@ issuer:
 
 image:
   name: theiacloud/cdt-blueprint
+  pullSecret: ""
 
 hosts:
-  workspace: workspace.34.159.89.224.nip.io
+  service: service.34.159.89.224.nip.io
   landing: theia.cloud.34.159.89.224.nip.io
   instance: ws.34.159.89.224.nip.io
 
 landingPage:
   image: theiacloud/theia-cloud-try-now-page
-  template: "theia-cloud-demo"
+  appDefinition: "theia-cloud-demo"
 
 keycloak:
   enable: false
@@ -32,9 +33,10 @@ operator:
   ephemeralStorage: true
   cloudProvider: "GKE"
   bandwidthLimiter: "WONDERSHAPER"
+  killAfter: "FIXEDTIME"
 
-workspace:
-  image: theiacloud/theia-cloud-workspace
+service:
+  image: theiacloud/theia-cloud-service
 
 ingress:
   instanceName: "theia-cloud-demo-ws-ingress"

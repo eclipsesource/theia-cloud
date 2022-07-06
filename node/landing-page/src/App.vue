@@ -1,8 +1,8 @@
 <template>
   <img alt="Theia logo" src="/logo.png" />
-  <WorkspaceLauncher
-    :workspaceServiceUrl="workspaceServiceUrl"
-    :workspaceTemplate="workspaceTemplate"
+  <SessionLauncher
+    :serviceUrl="serviceUrl"
+    :appDefinition="appDefinition"
     :email="email"
     :appId="appId"
   />
@@ -10,7 +10,7 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import WorkspaceLauncher from "./components/WorkspaceLauncher.vue";
+import SessionLauncher from "./components/SessionLauncher.vue";
 import Keycloak, { KeycloakConfig } from "keycloak-js";
 import { v4 as uuidv4 } from "uuid";
 
@@ -27,11 +27,11 @@ export default defineComponent({
     keycloakAuthUrl: String,
     keycloakRealm: String,
     keycloakClientId: String,
-    workspaceServiceUrl: String,
-    workspaceTemplate: String,
+    serviceUrl: String,
+    appDefinition: String,
   },
   components: {
-    WorkspaceLauncher,
+    SessionLauncher,
   },
   data() {
     return {
