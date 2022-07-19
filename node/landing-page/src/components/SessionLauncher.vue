@@ -7,7 +7,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import axios from 'axios';
+import axios, { AxiosRequestHeaders } from 'axios';
 
 export default defineComponent({
   name: 'SessionLauncher',
@@ -15,7 +15,8 @@ export default defineComponent({
     serviceUrl: String,
     appDefinition: String,
     email: String,
-    appId: String
+    appId: String,
+    token: String
   },
   created() {
     if (this.email) {
@@ -47,7 +48,8 @@ export default defineComponent({
             appId: this.appId
           },
           {
-            timeout: 300000
+            timeout: 300000,
+            headers: this.getHeaders()
           }
         )
         .then(response => {
@@ -64,6 +66,12 @@ export default defineComponent({
           console.error(error.message);
           this.startSession(retries - 1);
         });
+    }, 
+    getHeaders(): AxiosRequestHeaders | undefined {
+      if (this.token) {
+        return { Authorization: 'Bearer ' + this.token };
+      }
+      return undefined;
     }
   }
 });

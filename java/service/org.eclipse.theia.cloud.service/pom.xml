@@ -4,14 +4,14 @@
 	xmlns="http://maven.apache.org/POM/4.0.0"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	<modelVersion>4.0.0</modelVersion>
-	<artifactId>service</artifactId>
-
 	<parent>
 		<groupId>org.eclipse.theia.cloud</groupId>
 		<artifactId>conf</artifactId>
 		<version>0.7.0-SNAPSHOT</version>
 		<relativePath>../../common/maven-conf/</relativePath>
 	</parent>
+
+	<artifactId>service</artifactId>
 
 	<dependencyManagement>
 		<dependencies>
@@ -35,8 +35,9 @@
 		<dependency>
 			<groupId>io.fabric8</groupId>
 			<artifactId>kubernetes-client</artifactId>
-			<version>${kubernetes-client.version}</version><!--$NO-MVN-MAN-VER$-->
+			<version>${kubernetes-client.version}</version><!--$NO-MVN-MAN-VER$ -->
 		</dependency>
+
 		<dependency>
 			<groupId>io.quarkus</groupId>
 			<artifactId>quarkus-resteasy-jackson</artifactId>
@@ -48,6 +49,14 @@
 		<dependency>
 			<groupId>io.quarkus</groupId>
 			<artifactId>quarkus-resteasy</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-oidc</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-keycloak-authorization</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>

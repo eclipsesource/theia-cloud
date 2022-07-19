@@ -19,10 +19,13 @@ package org.eclipse.theia.cloud.service;
 import static org.eclipse.theia.cloud.common.util.LogMessageUtil.formatLogMessage;
 import static org.eclipse.theia.cloud.common.util.LogMessageUtil.generateCorrelationId;
 
+import javax.inject.Inject;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 
 import org.jboss.logging.Logger;
+
+import io.quarkus.security.identity.SecurityIdentity;
 
 @Path("/service")
 public class SessionResource {
@@ -30,18 +33,29 @@ public class SessionResource {
     private static final Logger LOGGER = Logger.getLogger(SessionResource.class);
 
     private static final String THEIA_CLOUD_APP_ID = "theia.cloud.app.id";
+    private static final String THEIA_CLOUD_USE_KEYCLOAK = "theia.cloud.use.keycloak";
     private static final String INIT = "INIT";
+    @Inject
+    SecurityIdentity identity;
 
     private String appId;
+    private boolean useKeycloak;
 
     public SessionResource() {
 	appId = System.getProperty(THEIA_CLOUD_APP_ID, "");
+	useKeycloak = Boolean.valueOf(System.getProperty(THEIA_CLOUD_USE_KEYCLOAK, "false"));
 	LOGGER.info(formatLogMessage(INIT, "App Id: " + appId));
     }
 
     @POST
     public Reply launchSession(Session session) {
 	String correlationId = generateCorrelationId();
+	LOGGER.info(formatLogMessage(correlationId,
+		"useKeycloak " + useKeycloak + " ; isAnonymous: " + identity.isAnonymous()));
+	if (useKeycloak && identity.isAnonymous()) {
+	    LOGGER.info(formatLogMessage(correlationId, "Launching session call without authentication."));
+	    return new Reply(false, "", "Unauthenticated");
+	}
 	if (wrongAppId(session)) {
 	    LOGGER.info(
 		    formatLogMessage(correlationId, "Launching session call without matching appId: " + session.appId));

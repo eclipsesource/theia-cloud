@@ -5,6 +5,7 @@
     :appDefinition="appDefinition"
     :email="email"
     :appId="appId"
+    :token="token"
   />
 </template>
 
@@ -16,6 +17,7 @@ import { v4 as uuidv4 } from "uuid";
 
 interface AppData {
   email: string | undefined;
+  token: string | undefined;
 }
 
 export default defineComponent({
@@ -36,6 +38,7 @@ export default defineComponent({
   data() {
     return {
       email: undefined,
+      token: undefined,
     } as AppData;
   },
   created() {
@@ -63,6 +66,7 @@ export default defineComponent({
           } else {
             const parsedToken = keycloak.idTokenParsed;
             if (parsedToken) {
+              this.token = keycloak.idToken;
               this.email = parsedToken.email;
             }
           }
