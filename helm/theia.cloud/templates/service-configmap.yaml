@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: service-config
+  namespace: {{ .Release.Namespace }}
+data:
+  APPID: {{ .Values.app.id }}
+  KEYCLOAK_ENABLE: {{ .Values.keycloak.enable | quote }}
+  KEYCLOAK_SERVERURL: {{ .Values.keycloak.authUrl }}realms/{{ .Values.keycloak.realm }}
+  KEYCLOAK_CLIENTID: {{ .Values.keycloak.clientId }}
+  KEYCLOAK_CLIENTSECRET: {{ .Values.keycloak.clientSecret }}

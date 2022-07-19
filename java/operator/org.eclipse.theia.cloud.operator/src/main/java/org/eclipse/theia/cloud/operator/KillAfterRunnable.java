@@ -27,10 +27,10 @@ import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.theia.cloud.common.k8s.resource.Workspace;
-import org.eclipse.theia.cloud.common.k8s.resource.WorkspaceSpecResourceList;
-import org.eclipse.theia.cloud.operator.resource.TemplateSpecResource;
-import org.eclipse.theia.cloud.operator.resource.TemplateSpecResourceList;
+import org.eclipse.theia.cloud.common.k8s.resource.Session;
+import org.eclipse.theia.cloud.common.k8s.resource.SessionSpecResourceList;
+import org.eclipse.theia.cloud.operator.resource.AppDefinitionSpecResource;
+import org.eclipse.theia.cloud.operator.resource.AppDefinitionSpecResourceList;
 
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
@@ -41,14 +41,14 @@ public final class KillAfterRunnable implements Runnable {
 
     private static final Logger LOGGER = LogManager.getLogger(KillAfterRunnable.class);
 
-    private NonNamespaceOperation<TemplateSpecResource, TemplateSpecResourceList, Resource<TemplateSpecResource>> templateResourceClient;
-    private NonNamespaceOperation<Workspace, WorkspaceSpecResourceList, Resource<Workspace>> workspaceResourceClient;
+    private NonNamespaceOperation<AppDefinitionSpecResource, AppDefinitionSpecResourceList, Resource<AppDefinitionSpecResource>> appDefinitionResourceClient;
+    private NonNamespaceOperation<Session, SessionSpecResourceList, Resource<Session>> sessionResourceClient;
 
     public KillAfterRunnable(
-	    NonNamespaceOperation<TemplateSpecResource, TemplateSpecResourceList, Resource<TemplateSpecResource>> templateResourceClient,
-	    NonNamespaceOperation<Workspace, WorkspaceSpecResourceList, Resource<Workspace>> workspaceResourceClient) {
-	this.templateResourceClient = templateResourceClient;
-	this.workspaceResourceClient = workspaceResourceClient;
+	    NonNamespaceOperation<AppDefinitionSpecResource, AppDefinitionSpecResourceList, Resource<AppDefinitionSpecResource>> appDefinitionResourceClient,
+	    NonNamespaceOperation<Session, SessionSpecResourceList, Resource<Session>> sessionResourceClient) {
+	this.appDefinitionResourceClient = appDefinitionResourceClient;
+	this.sessionResourceClient = sessionResourceClient;
     }
 
     @Override
@@ -57,48 +57,48 @@ public final class KillAfterRunnable implements Runnable {
 
 	try {
 	    Map<String, Integer> killAfterMap = new LinkedHashMap<>();
-	    for (TemplateSpecResource templateSpecResource : templateResourceClient.list().getItems()) {
-		String templateName = templateSpecResource.getSpec().getName();
-		int killAfter = templateSpecResource.getSpec().getKillAfter();
+	    for (AppDefinitionSpecResource appDefinition : appDefinitionResourceClient.list().getItems()) {
+		String appDefinitionName = appDefinition.getSpec().getName();
+		int killAfter = appDefinition.getSpec().getKillAfter();
 		if (killAfter < 1) {
 		    LOGGER.trace(formatLogMessage(COR_ID_KILLPREFIX, correlationId,
-			    "Template " + templateName + " workspaces are not killed."));
+			    "App Definition " + appDefinitionName + " sessions are not killed."));
 		} else {
-		    LOGGER.trace(formatLogMessage(COR_ID_KILLPREFIX, correlationId, "Template " + templateName
-			    + " workspaces will be killed after " + killAfter + " minutes."));
-		    killAfterMap.put(templateName, killAfter);
+		    LOGGER.trace(formatLogMessage(COR_ID_KILLPREFIX, correlationId, "App Definition "
+			    + appDefinitionName + " sessions will be killed after " + killAfter + " minutes."));
+		    killAfterMap.put(appDefinitionName, killAfter);
 		}
 	    }
 
-	    Set<String> workspacesToKill = new LinkedHashSet<>();
+	    Set<String> sessionsToKill = new LinkedHashSet<>();
 
 	    Instant now = Instant.now();
-	    for (Workspace workspace : workspaceResourceClient.list().getItems()) {
-		String templateName = workspace.getSpec().getTemplate();
-		if (killAfterMap.containsKey(templateName)) {
-		    Integer killAfter = killAfterMap.get(templateName);
+	    for (Session session : sessionResourceClient.list().getItems()) {
+		String appDefinitionName = session.getSpec().getAppDefinition();
+		if (killAfterMap.containsKey(appDefinitionName)) {
+		    Integer killAfter = killAfterMap.get(appDefinitionName);
 
-		    String creationTimestamp = workspace.getMetadata().getCreationTimestamp();
+		    String creationTimestamp = session.getMetadata().getCreationTimestamp();
 		    Instant parse = Instant.parse(creationTimestamp);
 		    long minutesSinceCreation = ChronoUnit.MINUTES.between(parse, now);
 		    if (minutesSinceCreation > killAfter) {
 			LOGGER.info(formatLogMessage(COR_ID_KILLPREFIX, correlationId,
-				"Workspace " + workspace.getSpec().getName() + " WILL be killed. KilledAfter: "
-					+ killAfter + " ; since creation: " + minutesSinceCreation));
-			workspacesToKill.add(workspace.getMetadata().getName());
+				"Session " + session.getSpec().getName() + " WILL be killed. KilledAfter: " + killAfter
+					+ " ; since creation: " + minutesSinceCreation));
+			sessionsToKill.add(session.getMetadata().getName());
 		    } else {
 			LOGGER.trace(formatLogMessage(COR_ID_KILLPREFIX, correlationId,
-				"Workspace " + workspace.getSpec().getName() + " will not be killed. KilledAfter: "
+				"Session " + session.getSpec().getName() + " will not be killed. KilledAfter: "
 					+ killAfter + " ; since creation: " + minutesSinceCreation));
 		    }
 		} else {
 		    LOGGER.trace(formatLogMessage(COR_ID_KILLPREFIX, correlationId,
-			    "Workspace " + workspace.getSpec().getName() + " will not be killed at all."));
+			    "Session " + session.getSpec().getName() + " will not be killed at all."));
 		}
 	    }
 
-	    for (String workspaceName : workspacesToKill) {
-		workspaceResourceClient.withName(workspaceName).delete();
+	    for (String sessionName : sessionsToKill) {
+		sessionResourceClient.withName(sessionName).delete();
 	    }
 	} catch (Exception e) {
 	    LOGGER.error(formatLogMessage(COR_ID_KILLPREFIX, correlationId, "Exception in kill after runnable"), e);

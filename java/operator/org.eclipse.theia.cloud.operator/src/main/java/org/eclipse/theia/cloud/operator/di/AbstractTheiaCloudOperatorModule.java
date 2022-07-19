@@ -19,9 +19,9 @@ package org.eclipse.theia.cloud.operator.di;
 import org.eclipse.theia.cloud.operator.handler.BandwidthLimiter;
 import org.eclipse.theia.cloud.operator.handler.IngressPathProvider;
 import org.eclipse.theia.cloud.operator.handler.PersistentVolumeHandler;
-import org.eclipse.theia.cloud.operator.handler.TemplateAddedHandler;
-import org.eclipse.theia.cloud.operator.handler.WorkspaceAddedHandler;
-import org.eclipse.theia.cloud.operator.handler.WorkspaceRemovedHandler;
+import org.eclipse.theia.cloud.operator.handler.AppDefinitionAddedHandler;
+import org.eclipse.theia.cloud.operator.handler.SessionAddedHandler;
+import org.eclipse.theia.cloud.operator.handler.SessionRemovedHandler;
 import org.eclipse.theia.cloud.operator.handler.impl.BandwidthLimiterImpl;
 import org.eclipse.theia.cloud.operator.handler.impl.IngressPathProviderImpl;
 import org.eclipse.theia.cloud.operator.handler.impl.PersistentVolumeHandlerImpl;
@@ -36,9 +36,9 @@ public abstract class AbstractTheiaCloudOperatorModule extends AbstractModule {
 	bind(BandwidthLimiter.class).to(bindBandwidthLimiter()).in(Singleton.class);
 	bind(PersistentVolumeHandler.class).to(bindPersistentVolumeHandler()).in(Singleton.class);
 	bind(IngressPathProvider.class).to(bindIngressPathProvider()).in(Singleton.class);
-	bind(TemplateAddedHandler.class).to(bindTemplateAddedHandler()).in(Singleton.class);
-	bind(WorkspaceAddedHandler.class).to(bindWorkspaceAddedHandler()).in(Singleton.class);
-	bind(WorkspaceRemovedHandler.class).to(bindWorkspaceRemovedHandler()).in(Singleton.class);
+	bind(AppDefinitionAddedHandler.class).to(bindAppDefinitionAddedHandler()).in(Singleton.class);
+	bind(SessionAddedHandler.class).to(bindSessionAddedHandler()).in(Singleton.class);
+	bind(SessionRemovedHandler.class).to(bindSessionRemovedHandler()).in(Singleton.class);
 
     }
 
@@ -54,10 +54,10 @@ public abstract class AbstractTheiaCloudOperatorModule extends AbstractModule {
 	return IngressPathProviderImpl.class;
     }
 
-    protected abstract Class<? extends TemplateAddedHandler> bindTemplateAddedHandler();
+    protected abstract Class<? extends AppDefinitionAddedHandler> bindAppDefinitionAddedHandler();
 
-    protected abstract Class<? extends WorkspaceAddedHandler> bindWorkspaceAddedHandler();
+    protected abstract Class<? extends SessionAddedHandler> bindSessionAddedHandler();
 
-    protected abstract Class<? extends WorkspaceRemovedHandler> bindWorkspaceRemovedHandler();
+    protected abstract Class<? extends SessionRemovedHandler> bindSessionRemovedHandler();
 
 }

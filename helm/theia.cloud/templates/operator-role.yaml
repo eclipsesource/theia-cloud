@@ -13,9 +13,9 @@ rules:
       - apps
     resources:
       - customresourcedefinitions
-      - templates
+      - appdefinitions
       - ingresses
-      - workspaces
+      - sessions
       - persistentvolumes
       - persistentvolumeclaims
       - services

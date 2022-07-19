@@ -25,8 +25,10 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -41,16 +43,17 @@ import javax.net.ssl.X509TrustManager;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.theia.cloud.common.k8s.resource.Workspace;
-import org.eclipse.theia.cloud.common.k8s.resource.WorkspaceSpecResourceList;
+import org.eclipse.theia.cloud.common.k8s.resource.Session;
+import org.eclipse.theia.cloud.common.k8s.resource.SessionSpecResourceList;
 import org.eclipse.theia.cloud.operator.handler.K8sUtil;
 import org.eclipse.theia.cloud.operator.handler.TheiaCloudIngressUtil;
-import org.eclipse.theia.cloud.operator.resource.TemplateSpec;
-import org.eclipse.theia.cloud.operator.resource.TemplateSpecResource;
+import org.eclipse.theia.cloud.operator.resource.AppDefinitionSpec;
+import org.eclipse.theia.cloud.operator.resource.AppDefinitionSpecResource;
 import org.eclipse.theia.cloud.operator.util.JavaResourceUtil;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.Container;
+import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -111,17 +114,17 @@ public final class AddedHandler {
     }
 
     public static void createAndApplyIngress(DefaultKubernetesClient client, String namespace, String correlationId,
-	    String templateResourceName, String templateResourceUID, TemplateSpecResource template) {
-	Map<String, String> replacements = TheiaCloudIngressUtil.getIngressReplacements(namespace, template);
+	    String templateResourceName, String templateResourceUID, AppDefinitionSpecResource appDefinition) {
+	Map<String, String> replacements = TheiaCloudIngressUtil.getIngressReplacements(namespace, appDefinition);
 	String ingressYaml;
 	try {
-	    ingressYaml = JavaResourceUtil.readResourceAndReplacePlaceholders(AddedHandler.class, TEMPLATE_INGRESS_YAML,
-		    replacements, correlationId);
+	    ingressYaml = JavaResourceUtil.readResourceAndReplacePlaceholders(TEMPLATE_INGRESS_YAML, replacements,
+		    correlationId);
 	} catch (IOException | URISyntaxException e) {
 	    return;
 	}
-	K8sUtil.loadAndCreateIngressWithOwnerReference(client, namespace, correlationId, ingressYaml, TemplateSpec.API,
-		TemplateSpec.KIND, templateResourceName, templateResourceUID, 0);
+	K8sUtil.loadAndCreateIngressWithOwnerReference(client, namespace, correlationId, ingressYaml,
+		AppDefinitionSpec.API, AppDefinitionSpec.KIND, templateResourceName, templateResourceUID, 0);
     }
 
     public static void updateProxyConfigMap(DefaultKubernetesClient client, String namespace, ConfigMap configMap,
@@ -135,17 +138,17 @@ public final class AddedHandler {
 	configMap.setData(data);
     }
 
-    public static void updateWorkspaceError(DefaultKubernetesClient client, Workspace workspace, String namespace,
+    public static void updateSessionError(DefaultKubernetesClient client, Session session, String namespace,
 	    String error, String correlationId) {
-	client.customResources(Workspace.class, WorkspaceSpecResourceList.class).inNamespace(namespace)
-		.withName(workspace.getMetadata().getName())//
+	client.customResources(Session.class, SessionSpecResourceList.class).inNamespace(namespace)
+		.withName(session.getMetadata().getName())//
 		.edit(ws -> {
 		    ws.getSpec().setError(error);
 		    return ws;
 		});
     }
 
-    public static void updateWorkspaceURLAsync(DefaultKubernetesClient client, Workspace workspace, String namespace,
+    public static void updateSessionURLAsync(DefaultKubernetesClient client, Session session, String namespace,
 	    String url, String correlationId) {
 	EXECUTOR.execute(() -> {
 	    for (int i = 1; i <= 60; i++) {
@@ -159,7 +162,7 @@ public final class AddedHandler {
 		try {
 		    connection = (HttpsURLConnection) new URL("https://" + url).openConnection();
 		} catch (IOException e) {
-		    LOGGER.error(formatLogMessage(correlationId, "Error while checking workspace availability."), e);
+		    LOGGER.error(formatLogMessage(correlationId, "Error while checking session availability."), e);
 		    continue;
 		}
 		int code;
@@ -177,7 +180,7 @@ public final class AddedHandler {
 		    continue;
 		} catch (NoSuchAlgorithmException | KeyManagementException e) {
 		    LOGGER.error(formatLogMessage(correlationId,
-			    "Error while checking workspace availability with SSL ignore."), e);
+			    "Error while checking session availability with SSL ignore."), e);
 		    continue;
 		}
 
@@ -185,8 +188,8 @@ public final class AddedHandler {
 
 		if (code == 200) {
 		    LOGGER.info(formatLogMessage(correlationId, url + " is available."));
-		    client.customResources(Workspace.class, WorkspaceSpecResourceList.class).inNamespace(namespace)
-			    .withName(workspace.getMetadata().getName())//
+		    client.customResources(Session.class, SessionSpecResourceList.class).inNamespace(namespace)
+			    .withName(session.getMetadata().getName())//
 			    .edit(ws -> {
 				ws.getSpec().setUrl(url);
 				return ws;
@@ -231,6 +234,16 @@ public final class AddedHandler {
 		toRemove.forEach(requests::remove);
 	    }
 	}
+    }
+
+    public static void addImagePullSecret(Deployment deployment, String secret) {
+	List<LocalObjectReference> imagePullSecrets = deployment.getSpec().getTemplate().getSpec()
+		.getImagePullSecrets();
+	if (imagePullSecrets == null) {
+	    imagePullSecrets = new ArrayList<LocalObjectReference>();
+	    deployment.getSpec().getTemplate().getSpec().setImagePullSecrets(imagePullSecrets);
+	}
+	imagePullSecrets.add(new LocalObjectReference(secret));
     }
 
 }

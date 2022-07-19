@@ -8,15 +8,16 @@ issuer:
 
 image:
   name: theiacloud/cdt-blueprint
+  pullSecret: ""
 
 hosts:
-  workspace: workspace.192.168.39.173.nip.io
+  service: service.192.168.39.173.nip.io
   landing: theia.cloud.192.168.39.173.nip.io
   instance: ws.192.168.39.173.nip.io
 
 landingPage:
   image: theiacloud/theia-cloud-landing-page
-  template: "theia-cloud-demo"
+  appDefinition: "theia-cloud-demo"
 
 keycloak:
   enable: false
@@ -33,8 +34,8 @@ operator:
   cloudProvider: "K8S"
   bandwidthLimiter: "K8SANNOTATION"
 
-workspace:
-  image: theiacloud/theia-cloud-workspace
+service:
+  image: theiacloud/theia-cloud-service
 
 ingress:
   instanceName: "theia-cloud-demo-ws-ingress"
