@@ -1,6 +1,6 @@
 import './App.css';
 
-import { getTheiaCloudConfig, startSession } from '@theia-cloud/common';
+import { createAndLaunchSession, getTheiaCloudConfig } from '@theia-cloud/common';
 import { useState } from 'react';
 
 import { Spinner } from './components/Spinner';
@@ -24,7 +24,7 @@ function App(): JSX.Element {
   const handleStartSession = (): void => {
     setLoading(true);
     setError(undefined);
-    startSession({
+    createAndLaunchSession({
       appId: config.appId,
       serviceUrl: config.serviceUrl,
       appDefinition: config.appDefinition
