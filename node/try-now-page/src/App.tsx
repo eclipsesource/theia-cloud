@@ -44,32 +44,31 @@ function App(): JSX.Element {
 
   return (
     <div className='App'>
-      <img src={'/logo.png'} className='App__logo' alt='logo' />
+      {loading ? <Spinner /> : <img src={'/logo.png'} className='App__logo' alt='logo' />}
       <p>
         Powered by{' '}
         <a href='http://theia-cloud.io' target='_blank' rel='noreferrer'>
           Theia.Cloud
         </a>
       </p>
-      <p>
-        <input
-          id='accept-terms'
-          type='checkbox'
-          checked={acceptedTerms}
-          onChange={ev => setAcceptedTerms(ev.target.checked)}
-        />
-        <label htmlFor='accept-terms'>
-          I accept the{' '}
-          <a target='popup' href='/terms.html' onClick={openTerms}>
-            terms and conditions.
-          </a>
-        </label>
-      </p>
+      {!loading &&
+        <p>
+          <input
+            id='accept-terms'
+            type='checkbox'
+            checked={acceptedTerms}
+            onChange={ev => setAcceptedTerms(ev.target.checked)}
+          />
+          <label htmlFor='accept-terms'>
+            I accept the{' '}
+            <a target='popup' href='/terms.html' onClick={openTerms}>
+              terms and conditions.
+            </a>
+          </label>
+        </p>
+      }
       {loading ? (
-        <>
-          <Spinner />
-          <p>We will now spawn a dedicated Blueprint for you, hang in tight, this might take up to 3 minutes.</p>
-        </>
+        <p>We will now spawn a dedicated Blueprint for you, hang in tight, this might take up to 3 minutes.</p>
       ) : (
         <p>
           <button disabled={!acceptedTerms} onClick={handleStartSession} className='App__try-now-button'>
@@ -78,7 +77,7 @@ function App(): JSX.Element {
         </p>
       )}
       {error !== undefined && (
-        <p>
+        <p className='App__error-message'>
           <strong>ERROR: {error}</strong>
         </p>
       )}

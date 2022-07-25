@@ -12,26 +12,32 @@
 }
 
 .App__try-now-button {
-  display: inline-block;
-  margin: 0;
-  line-height: 1;
   -webkit-appearance: none;
-
-  padding: 20px;
-  border-radius: 25px;
-  border: 2px solid black;
-  background-color: #0d82ff;
-  font-weight: 600;
+  border: 2px solid #0d82ff;
+  color: #0d82ff;
+  border-radius: 20px;
+  display: inline-block;
   font-size: 2em;
+  font-weight: 600;
+  line-height: 1;
+  margin: 0;
+  padding: 20px
 }
 
 .App__try-now-button:hover {
-  cursor: pointer;
-  background-color: #75b8ff;
+  background-color: #0d82ff10;
+  cursor: pointer
 }
 
 .App__try-now-button:disabled {
+  background-color: rgba(0, 0, 0, 0);
+  color: rgba(0, 0, 0, 0.2);
+  border-color: rgba(0, 0, 0, 0.1);
   cursor: default;
-  background-color: initial;
-  border-color: initial;
+}
+
+.App__error-message {
+  width: 60vw;
+  text-align: justify;
+  line-height: 1.5em;
 }
