@@ -30,7 +30,7 @@ export function startSession(options: SessionOptions, retries = 0): Promise<void
           location.replace(`https://${response.data.url}`);
         } else {
           console.error(response.data.error);
-          throw new Error(`Could not launch session: ${response.data.error}`);
+          throw new Error('Sorry, we were unable to launch another Theia Blueprint instance for you at this point since the cluster reached the maximum of available instances. Please try again later, instances are shut down after 30 minutes so there is a good chance that you might be able to grab an instance in 30 minutes. Please also note this is not a technical limit of Theia.cloud, but was intentionally set by us to keep this free offer within its intended budget.');
         }
       },
       error => {
