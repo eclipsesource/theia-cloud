@@ -1,6 +1,6 @@
 import './App.css';
 
-import { createAndLaunchSession, getTheiaCloudConfig } from '@theia-cloud/common';
+import { createAndLaunchSession, getTheiaCloudConfig } from '@eclipse-theiacloud/common';
 import { useState } from 'react';
 
 import { Spinner } from './components/Spinner';
