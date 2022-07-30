@@ -17,16 +17,16 @@
 package org.eclipse.theia.cloud.operator.di;
 
 import org.eclipse.theia.cloud.operator.TheiaCloudArguments;
-import org.eclipse.theia.cloud.operator.handler.PersistentVolumeHandler;
-import org.eclipse.theia.cloud.operator.handler.AppDefinitionAddedHandler;
-import org.eclipse.theia.cloud.operator.handler.SessionAddedHandler;
-import org.eclipse.theia.cloud.operator.handler.SessionRemovedHandler;
+import org.eclipse.theia.cloud.operator.handler.AppDefinitionHandler;
+import org.eclipse.theia.cloud.operator.handler.PersistentVolumeCreator;
+import org.eclipse.theia.cloud.operator.handler.SessionHandler;
+import org.eclipse.theia.cloud.operator.handler.WorkspaceHandler;
 import org.eclipse.theia.cloud.operator.handler.impl.EagerStartAppDefinitionAddedHandler;
-import org.eclipse.theia.cloud.operator.handler.impl.EagerStartSessionAddedHandler;
-import org.eclipse.theia.cloud.operator.handler.impl.GKEPersistentVolumeHandlerImpl;
-import org.eclipse.theia.cloud.operator.handler.impl.LazyStartAppDefinitionAddedHandler;
-import org.eclipse.theia.cloud.operator.handler.impl.LazyStartSessionAddedHandler;
-import org.eclipse.theia.cloud.operator.handler.impl.LazyStartSessionRemovedHandler;
+import org.eclipse.theia.cloud.operator.handler.impl.EagerStartSessionHandler;
+import org.eclipse.theia.cloud.operator.handler.impl.GKEPersistentVolumeCreator;
+import org.eclipse.theia.cloud.operator.handler.impl.LazySessionHandler;
+import org.eclipse.theia.cloud.operator.handler.impl.LazyStartAppDefinitionHandler;
+import org.eclipse.theia.cloud.operator.handler.impl.LazyWorkspaceHandler;
 
 public class DefaultTheiaCloudOperatorModule extends AbstractTheiaCloudOperatorModule {
 
@@ -43,7 +43,7 @@ public class DefaultTheiaCloudOperatorModule extends AbstractTheiaCloudOperatorM
     }
 
     @Override
-    protected Class<? extends PersistentVolumeHandler> bindPersistentVolumeHandler() {
+    protected Class<? extends PersistentVolumeCreator> bindPersistentVolumeHandler() {
 	if (arguments.isEphemeralStorage()) {
 	    return super.bindPersistentVolumeHandler();
 	}
@@ -52,7 +52,7 @@ public class DefaultTheiaCloudOperatorModule extends AbstractTheiaCloudOperatorM
 	}
 	switch (arguments.getCloudProvider()) {
 	case GKE:
-	    return GKEPersistentVolumeHandlerImpl.class;
+	    return GKEPersistentVolumeCreator.class;
 	case K8S:
 	default:
 	    return super.bindPersistentVolumeHandler();
@@ -60,29 +60,25 @@ public class DefaultTheiaCloudOperatorModule extends AbstractTheiaCloudOperatorM
     }
 
     @Override
-    protected Class<? extends AppDefinitionAddedHandler> bindAppDefinitionAddedHandler() {
+    protected Class<? extends AppDefinitionHandler> bindAppDefinitionHandler() {
 	if (arguments.isEagerStart()) {
 	    return EagerStartAppDefinitionAddedHandler.class;
 	} else {
-	    return LazyStartAppDefinitionAddedHandler.class;
+	    return LazyStartAppDefinitionHandler.class;
 	}
     }
 
     @Override
-    protected Class<? extends SessionAddedHandler> bindSessionAddedHandler() {
-	if (arguments.isEagerStart()) {
-	    return EagerStartSessionAddedHandler.class;
-	} else {
-	    return LazyStartSessionAddedHandler.class;
-	}
+    protected Class<? extends WorkspaceHandler> bindWorkspaceHandler() {
+	return LazyWorkspaceHandler.class;
     }
 
     @Override
-    protected Class<? extends SessionRemovedHandler> bindSessionRemovedHandler() {
+    protected Class<? extends SessionHandler> bindSessionHandler() {
 	if (arguments.isEagerStart()) {
-	    throw new UnsupportedOperationException("Not implemented yet");
+	    return EagerStartSessionHandler.class;
 	} else {
-	    return LazyStartSessionRemovedHandler.class;
+	    return LazySessionHandler.class;
 	}
     }
 

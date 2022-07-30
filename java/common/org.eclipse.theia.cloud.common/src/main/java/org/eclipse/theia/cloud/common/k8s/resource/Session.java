@@ -16,7 +16,7 @@
  ********************************************************************************/
 package org.eclipse.theia.cloud.common.k8s.resource;
 
-import org.eclipse.theia.cloud.common.k8s.resource.util.K8sResourceUtil;
+import org.eclipse.theia.cloud.common.util.CustomResourceUtil;
 
 import io.fabric8.kubernetes.api.model.Namespaced;
 import io.fabric8.kubernetes.client.CustomResource;
@@ -35,7 +35,7 @@ public class Session extends CustomResource<SessionSpec, Void> implements Namesp
 
     @Override
     public String toString() {
-	return K8sResourceUtil.customResourcetoString(this);
+	return CustomResourceUtil.toString(this);
     }
 
 }

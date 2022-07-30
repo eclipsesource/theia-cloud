@@ -16,19 +16,19 @@
  ********************************************************************************/
 package org.eclipse.theia.cloud.operator.handler.impl;
 
+import org.eclipse.theia.cloud.common.k8s.resource.AppDefinition;
 import org.eclipse.theia.cloud.common.k8s.resource.Session;
 import org.eclipse.theia.cloud.operator.handler.IngressPathProvider;
-import org.eclipse.theia.cloud.operator.resource.AppDefinitionSpecResource;
 
 public class IngressPathProviderImpl implements IngressPathProvider {
 
     @Override
-    public String getPath(AppDefinitionSpecResource appDefinition, int instance) {
+    public String getPath(AppDefinition appDefinition, int instance) {
 	return "/" + appDefinition.getSpec() + "-" + instance;
     }
 
     @Override
-    public String getPath(AppDefinitionSpecResource appDefinition, Session session) {
+    public String getPath(AppDefinition appDefinition, Session session) {
 	return "/" + session.getMetadata().getUid();
     }
 

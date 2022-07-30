@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize()
-public class SessionSpec {
+public class SessionSpec implements UserScopedSpec {
 
     public static final String API = "theia.cloud/v1beta";
     public static final String KIND = "Session";
@@ -41,13 +41,20 @@ public class SessionSpec {
     @JsonProperty("error")
     private String error;
 
+    @JsonProperty("workspace")
+    private String workspace;
+
+    @JsonProperty("lastActivity")
+    private long lastActivity;
+
     public SessionSpec() {
     }
 
-    public SessionSpec(String name, String appDefinition, String user) {
+    public SessionSpec(String name, String appDefinition, String user, String workspace) {
 	this.name = name;
 	this.appDefinition = appDefinition;
 	this.user = user;
+	this.workspace = workspace;
     }
 
     public String getName() {
@@ -58,6 +65,7 @@ public class SessionSpec {
 	return appDefinition;
     }
 
+    @Override
     public String getUser() {
 	return user;
     }
@@ -78,10 +86,34 @@ public class SessionSpec {
 	this.error = error;
     }
 
+    public long getLastActivity() {
+	return lastActivity;
+    }
+
+    public void setLastActivity(long lastActivity) {
+	this.lastActivity = lastActivity;
+    }
+
+    public String getWorkspace() {
+	return workspace;
+    }
+
+    public void setWorkspace(String workspace) {
+	this.workspace = workspace;
+    }
+
+    public boolean hasUrl() {
+	return getUrl() != null && !getUrl().isBlank();
+    }
+
+    public boolean hasError() {
+	return getError() != null && !getError().isBlank();
+    }
+
     @Override
     public String toString() {
 	return "SessionSpec [name=" + name + ", appDefinition=" + appDefinition + ", user=" + user + ", url=" + url
-		+ ", error=" + error + "]";
+		+ ", error=" + error + ", lastActivity=" + lastActivity + "]";
     }
 
 }
